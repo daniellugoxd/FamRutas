@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "circles": {
+      "path": "/circles/{circleId}",
+      "description": "Family tracking circles",
+      "fields": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "inviteCode": { "type": "string" },
+        "memberUids": { "type": "list" },
+        "createdAt": { "type": "timestamp" }
+      }
+    },
+    "circle_members": {
+      "path": "/circles/{circleId}/members/{userId}",
+      "description": "Real-time location, speed and avatar telemetry of each family member",
+      "fields": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "avatarEmoji": { "type": "string" },
+        "avatarBgColorHex": { "type": "number" },
+        "vehicleType": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "streetName": { "type": "string" },
+        "speedKmH": { "type": "number" },
+        "batteryLevel": { "type": "number" },
+        "statusText": { "type": "string" },
+        "isMoving": { "type": "boolean" },
+        "updatedAt": { "type": "timestamp" }
+      }
+    },
+    "alerts": {
+      "path": "/alerts/{alertId}",
+      "description": "Road alerts, fotomultas, police, and traffic reports",
+      "fields": {
+        "type": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "streetName": { "type": "string" },
+        "description": { "type": "string" },
+        "reportedBy": { "type": "string" },
+        "reporterUid": { "type": "string" },
+        "createdAt": { "type": "timestamp" }
+      }
+    },
+    "messages": {
+      "path": "/messages/{messageId}",
+      "description": "Family chat and emergency messages",
+      "fields": {
+        "circleId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderEmoji": { "type": "string" },
+        "text": { "type": "string" },
+        "isEmergency": { "type": "boolean" },
+        "createdAt": { "type": "timestamp" }
+      }
+    }
+  }
+}

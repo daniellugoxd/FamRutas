@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-android-famruta-19b433f1-9031-4560-b961-80aff0e9b52b",
+      "rules": "firestore.rules"
+    }
+  ]
+}
