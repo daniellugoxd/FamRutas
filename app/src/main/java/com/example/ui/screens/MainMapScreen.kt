@@ -92,6 +92,8 @@ fun MainMapScreen(
             activeRoute = uiState.activeRoute,
             selectedMember = uiState.selectedMember,
             isDayMode = uiState.isDayMode,
+            trafficSegments = uiState.trafficSegments,
+            isTrafficOverlayEnabled = uiState.isTrafficOverlayEnabled,
             onSelectMember = { viewModel.selectMember(it) },
             onSelectAlert = { viewModel.selectAlert(it) },
             modifier = Modifier.fillMaxSize()
@@ -298,6 +300,20 @@ fun MainMapScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
+                            // Traffic API Layer Toggle
+                            IconButton(
+                                onClick = { viewModel.toggleTrafficOverlay() },
+                                colors = IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = if (uiState.isTrafficOverlayEnabled) TrafficOrange.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.Traffic,
+                                    contentDescription = "Capa de Tráfico",
+                                    tint = if (uiState.isTrafficOverlayEnabled) TrafficOrange else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
                             // Day / Night Toggle
                             IconButton(onClick = { viewModel.toggleDayNightMode() }) {
                                 Icon(
@@ -418,6 +434,7 @@ fun MainMapScreen(
                 speedLimitKmH = uiState.currentSpeedLimitKmH,
                 isSpeeding = uiState.isSpeeding,
                 approachingCameraAlert = uiState.approachingCameraAlert,
+                proximityEvent = uiState.cameraProximityEvent,
                 onDismissCameraAlert = { viewModel.dismissCameraAlert() }
             )
 

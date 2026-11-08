@@ -35,6 +35,8 @@ fun MapCanvas(
     activeRoute: TripRoute?,
     selectedMember: FamilyMember?,
     isDayMode: Boolean,
+    trafficSegments: List<com.example.model.TrafficSegment> = emptyList(),
+    isTrafficOverlayEnabled: Boolean = true,
     onSelectMember: (FamilyMember) -> Unit,
     onSelectAlert: (TrafficAlert) -> Unit,
     modifier: Modifier = Modifier
@@ -253,28 +255,68 @@ fun MapCanvas(
                 center = Offset(centerX, centerY - 100f * zoomScale)
             )
 
-            // 4. Traffic Flow Heatmap Lines
-            drawLine(
-                color = TrafficRed.copy(alpha = 0.85f),
-                start = Offset(centerX, centerY - 250f * zoomScale),
-                end = Offset(centerX, centerY + 80f * zoomScale),
-                strokeWidth = 6f * zoomScale,
-                cap = StrokeCap.Round
-            )
-            drawLine(
-                color = TrafficOrange.copy(alpha = 0.85f),
-                start = Offset(centerX - 150f * zoomScale, centerY + 230f * zoomScale),
-                end = Offset(centerX + 220f * zoomScale, centerY + 200f * zoomScale),
-                strokeWidth = 6f * zoomScale,
-                cap = StrokeCap.Round
-            )
-            drawLine(
-                color = TrafficGreen.copy(alpha = 0.75f),
-                start = Offset(centerX - 450f * zoomScale, centerY - 120f * zoomScale),
-                end = Offset(centerX - 100f * zoomScale, centerY - 110f * zoomScale),
-                strokeWidth = 6f * zoomScale,
-                cap = StrokeCap.Round
-            )
+            // 4. Live Dynamic Traffic Flow Overlay (Periodic Google Maps Traffic API)
+            if (isTrafficOverlayEnabled) {
+                if (trafficSegments.isNotEmpty()) {
+                    trafficSegments.forEach { seg ->
+                        val startPos = projectToScreen(
+                            GeoPoint(seg.startLat, seg.startLng),
+                            baseLat, baseLng, centerX, centerY, zoomScale
+                        )
+                        val endPos = projectToScreen(
+                            GeoPoint(seg.endLat, seg.endLng),
+                            baseLat, baseLng, centerX, centerY, zoomScale
+                        )
+
+                        val segColor = when (seg.congestionLevel) {
+                            com.example.model.TrafficCongestionLevel.FREE_FLOW -> TrafficGreen.copy(alpha = 0.85f)
+                            com.example.model.TrafficCongestionLevel.MODERATE -> TrafficOrange.copy(alpha = 0.90f)
+                            com.example.model.TrafficCongestionLevel.HEAVY -> TrafficRed.copy(alpha = 0.92f)
+                            com.example.model.TrafficCongestionLevel.SEVERE -> SpeedCameraRedDark.copy(alpha = 0.96f)
+                        }
+
+                        // Wide glow outline
+                        drawLine(
+                            color = segColor.copy(alpha = 0.3f),
+                            start = startPos,
+                            end = endPos,
+                            strokeWidth = 14f * zoomScale,
+                            cap = StrokeCap.Round
+                        )
+                        // Core traffic flow stroke
+                        drawLine(
+                            color = segColor,
+                            start = startPos,
+                            end = endPos,
+                            strokeWidth = 8f * zoomScale,
+                            cap = StrokeCap.Round
+                        )
+                    }
+                } else {
+                    // Fallback baseline traffic lines
+                    drawLine(
+                        color = TrafficRed.copy(alpha = 0.85f),
+                        start = Offset(centerX, centerY - 250f * zoomScale),
+                        end = Offset(centerX, centerY + 80f * zoomScale),
+                        strokeWidth = 7f * zoomScale,
+                        cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color = TrafficOrange.copy(alpha = 0.85f),
+                        start = Offset(centerX - 150f * zoomScale, centerY + 230f * zoomScale),
+                        end = Offset(centerX + 220f * zoomScale, centerY + 200f * zoomScale),
+                        strokeWidth = 7f * zoomScale,
+                        cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color = TrafficGreen.copy(alpha = 0.75f),
+                        start = Offset(centerX - 450f * zoomScale, centerY - 120f * zoomScale),
+                        end = Offset(centerX - 100f * zoomScale, centerY - 110f * zoomScale),
+                        strokeWidth = 7f * zoomScale,
+                        cap = StrokeCap.Round
+                    )
+                }
+            }
 
             // 5. Active Navigation Route Line
             if (activeRoute != null && activeRoute.points.isNotEmpty()) {

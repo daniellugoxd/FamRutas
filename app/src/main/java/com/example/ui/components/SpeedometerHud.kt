@@ -37,6 +37,7 @@ fun SpeedometerHud(
     isSpeeding: Boolean,
     approachingCameraAlert: TrafficAlert?,
     onDismissCameraAlert: () -> Unit,
+    proximityEvent: com.example.service.CameraProximityEvent? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -45,18 +46,28 @@ fun SpeedometerHud(
     ) {
         // Approaching Speed Camera Warning Card (Like Waze!)
         AnimatedVisibility(
-            visible = approachingCameraAlert != null,
+            visible = approachingCameraAlert != null || proximityEvent != null,
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            approachingCameraAlert?.let { alert ->
+            val alert = proximityEvent?.alert ?: approachingCameraAlert
+            if (alert != null) {
+                val distanceMeters = proximityEvent?.distanceMeters ?: 250
+                val isOverLimit = proximityEvent?.isOverSpeedLimit ?: isSpeeding
+                val cardColor = if (isOverLimit) SpeedCameraRed else Color(0xFFB91C1C)
+
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = SpeedCameraRed),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = cardColor),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
+                        .border(
+                            2.dp,
+                            if (isOverLimit) Color.Yellow else Color.White.copy(alpha = 0.5f),
+                            RoundedCornerShape(16.dp)
+                        )
                         .testTag("camera_alert_card")
                 ) {
                     Row(
@@ -64,20 +75,25 @@ fun SpeedometerHud(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "📸",
+                            text = if (isOverLimit) "⚠️📸" else "📸",
                             fontSize = 28.sp,
-                            modifier = Modifier.padding(end = 12.dp)
+                            modifier = Modifier.padding(end = 10.dp)
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "¡FOTOMULTA EN 250 METROS!",
-                                color = Color.White,
-                                fontWeight = FontWeight.ExtraBold,
+                                text = "¡FOTOMULTA EN $distanceMeters METROS!",
+                                color = if (isOverLimit) Color.Yellow else Color.White,
+                                fontWeight = FontWeight.Black,
                                 fontSize = 14.sp
                             )
                             Text(
-                                text = "Límite: ${alert.speedLimitKmH ?: 60} km/h • ${alert.description}",
-                                color = Color.White.copy(alpha = 0.9f),
+                                text = if (isOverLimit) {
+                                    "🚨 ¡REDUCE VELOCIDAD! Límite: ${alert.speedLimitKmH ?: 60} km/h (Vas a $currentSpeedKmH km/h)"
+                                } else {
+                                    "Límite: ${alert.speedLimitKmH ?: 60} km/h • ${alert.description}"
+                                },
+                                color = Color.White.copy(alpha = 0.95f),
+                                fontWeight = if (isOverLimit) FontWeight.Bold else FontWeight.Normal,
                                 fontSize = 12.sp
                             )
                         }

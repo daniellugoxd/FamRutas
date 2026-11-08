@@ -59,7 +59,11 @@ data class FamRutaUiState(
     val activeRouteTargetMemberId: String? = null,
     val isRouteDelayed: Boolean = false,
     val reunionEvent: ReunionEvent? = null,
-    val userHeading: Float = 45f
+    val userHeading: Float = 45f,
+    val trafficSegments: List<com.example.model.TrafficSegment> = emptyList(),
+    val isTrafficOverlayEnabled: Boolean = true,
+    val lastTrafficUpdateMillis: Long = System.currentTimeMillis(),
+    val cameraProximityEvent: com.example.service.CameraProximityEvent? = null
 )
 
 enum class MapFilter(val label: String) {
@@ -92,27 +96,42 @@ class FamRutaViewModel : ViewModel() {
     }
 
     private var locationService: com.example.service.LocationService? = null
+    private var proximityService: com.example.service.SpeedCameraProximityService? = null
 
     fun attachLocationService(context: Context) {
         if (locationService == null) {
             val service = com.example.service.LocationService(context.applicationContext)
             locationService = service
+            proximityService = com.example.service.SpeedCameraProximityService(context.applicationContext)
+
             viewModelScope.launch {
                 service.currentLocation.collect { loc ->
                     if (loc != null) {
+                        val speedKmH = (loc.speed * 3.6).toInt()
+                        val currentPoint = GeoPoint(loc.latitude, loc.longitude, "Ubicación GPS en vivo")
+
+                        // Run Speed Camera Proximity Detection
+                        val proxEvent = proximityService?.checkProximity(
+                            userLocation = currentPoint,
+                            userSpeedKmH = speedKmH.coerceAtLeast(_uiState.value.currentSpeedKmH),
+                            knownAlerts = _uiState.value.trafficAlerts
+                        )
+
                         _uiState.update { state ->
                             val updatedMembers = state.familyMembers.map { member ->
                                 if (member.id == "user_me") {
                                     member.copy(
-                                        location = GeoPoint(loc.latitude, loc.longitude, "Ubicación GPS en vivo"),
-                                        currentSpeedKmH = (loc.speed * 3.6).toInt(),
+                                        location = currentPoint,
+                                        currentSpeedKmH = speedKmH,
                                         heading = loc.bearing
                                     )
                                 } else member
                             }
                             state.copy(
                                 familyMembers = updatedMembers,
-                                currentSpeedKmH = (loc.speed * 3.6).toInt().coerceAtLeast(state.currentSpeedKmH)
+                                currentSpeedKmH = speedKmH.coerceAtLeast(state.currentSpeedKmH),
+                                cameraProximityEvent = proxEvent,
+                                approachingCameraAlert = proxEvent?.alert ?: state.approachingCameraAlert
                             )
                         }
                     }
@@ -134,9 +153,42 @@ class FamRutaViewModel : ViewModel() {
         locationService?.stopTracking()
     }
 
+    fun dismissCameraAlert() {
+        proximityService?.dismissCurrentAlert()
+        _uiState.update { it.copy(approachingCameraAlert = null, cameraProximityEvent = null) }
+    }
+
+    private val trafficApiService = com.example.data.api.TrafficApiService()
+
     init {
         startLiveMovementSimulation()
         startSpeedometerSimulation()
+        startPeriodicTrafficPolling()
+    }
+
+    private fun startPeriodicTrafficPolling() {
+        viewModelScope.launch {
+            trafficApiService.pollTrafficUpdates(pollIntervalMillis = 14000L).collect { response ->
+                _uiState.update { state ->
+                    state.copy(
+                        trafficSegments = response.segments,
+                        lastTrafficUpdateMillis = response.queryTimestamp
+                    )
+                }
+                if (response.generalAlert != null && _uiState.value.isNavigating) {
+                    showSnackbarAlert(
+                        message = response.generalAlert,
+                        iconEmoji = "🚦"
+                    )
+                }
+            }
+        }
+    }
+
+    fun toggleTrafficOverlay() {
+        _uiState.update { it.copy(isTrafficOverlayEnabled = !it.isTrafficOverlayEnabled) }
+        val status = if (_uiState.value.isTrafficOverlayEnabled) "Activado" else "Oculto"
+        showSnackbarAlert("Capa de Tráfico en vivo: $status", iconEmoji = "🚦")
     }
 
     private fun startLiveMovementSimulation() {
@@ -310,10 +362,6 @@ class FamRutaViewModel : ViewModel() {
 
     fun toggleDayNightMode() {
         _uiState.update { it.copy(isDayMode = !it.isDayMode) }
-    }
-
-    fun dismissCameraAlert() {
-        _uiState.update { it.copy(approachingCameraAlert = null) }
     }
 
     fun openReportModal() {
