@@ -60,28 +60,12 @@ fun EmergencySosModal(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Al presionar el botón se enviará inmediatamente una alerta de socorro con tu ubicación exacta y se activará la sirena a toda tu familia.",
-                    Card(
-    colors = CardDefaults.cardColors(
-        containerColor = SpeedCameraRed.copy(alpha = 0.08f)
-    )
-) {
-    Column(
-        modifier = Modifier.padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text("📍 Compartir ubicación exacta")
-        Text("🔋 Compartir nivel de batería")
-        Text("👨‍👩‍👧‍👦 Notificar a la familia")
-        Text("📞 Contactar emergencia")
-    }
-                    }
-                    
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+    text = "Al presionar el botón se enviará inmediatamente una alerta de socorro con tu ubicación exacta.",
+    fontSize = 13.sp,
+    color = MaterialTheme.colorScheme.onSurfaceVariant
+)
 
-                Box(
+              Box(
                     modifier = Modifier
                         .size((110 * scale).dp)
                         .clip(CircleShape)
