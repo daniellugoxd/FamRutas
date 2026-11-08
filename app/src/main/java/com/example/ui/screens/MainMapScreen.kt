@@ -263,26 +263,28 @@ fun MainMapScreen(
                                 Icon(Icons.Default.Navigation, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                             }
                             Column {
-                                Text(
-                                    text = "FamRuta",
-                                    Text(
-    text = "${uiState.familyMembers.size} miembros protegidos",
-    fontSize = 11.sp,
-    color = VpnSecureGreen,
-    fontWeight = FontWeight.Bold
-)
-                                    
-                                    fontSize = 18.sp,
-                            fontWeight = FontWeight.Black,
-                                    color = MaterialTheme.colorScheme.onSurface
-                           )
 
-                                Text(
-                                    text = "Protección familiar en tiempo real",
-                                    fontSize = 10.sp,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                           )
-                           }
+    Text(
+        text = "FamRuta",
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Black,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+
+    Text(
+        text = "${uiState.familyMembers.size} miembros protegidos",
+        fontSize = 11.sp,
+        color = VpnSecureGreen,
+        fontWeight = FontWeight.Bold
+    )
+
+    Text(
+        text = "Protección familiar en tiempo real",
+        fontSize = 10.sp,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+    )
+                            }
+                            
 
 
                             // VPN status badge
