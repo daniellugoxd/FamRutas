@@ -19,7 +19,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.*
 
+enum class AppScreen {
+    SPLASH,
+    LOGIN,
+    MAIN_MAP,
+    SETTINGS,
+    PROFILE
+}
+
 data class FamRutaUiState(
+    val currentScreen: AppScreen = AppScreen.SPLASH,
+    val activeNotifications: List<InAppNotification> = emptyList(),
     val familyMembers: List<FamilyMember> = MockDataProvider.initialFamilyMembers,
     val selectedMember: FamilyMember? = null,
     val trafficAlerts: List<TrafficAlert> = MockDataProvider.initialAlerts,
@@ -64,6 +74,65 @@ class FamRutaViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(FamRutaUiState())
     val uiState: StateFlow<FamRutaUiState> = _uiState.asStateFlow()
+
+    private val _snackbarAlert = MutableStateFlow<SnackbarAlert?>(null)
+    val snackbarAlert: StateFlow<SnackbarAlert?> = _snackbarAlert.asStateFlow()
+
+    fun showSnackbarAlert(message: String, actionLabel: String? = null, iconEmoji: String? = null, isEmergency: Boolean = false) {
+        _snackbarAlert.value = SnackbarAlert(
+            message = message,
+            actionLabel = actionLabel,
+            iconEmoji = iconEmoji,
+            isEmergency = isEmergency
+        )
+    }
+
+    fun dismissSnackbarAlert() {
+        _snackbarAlert.value = null
+    }
+
+    private var locationService: com.example.service.LocationService? = null
+
+    fun attachLocationService(context: Context) {
+        if (locationService == null) {
+            val service = com.example.service.LocationService(context.applicationContext)
+            locationService = service
+            viewModelScope.launch {
+                service.currentLocation.collect { loc ->
+                    if (loc != null) {
+                        _uiState.update { state ->
+                            val updatedMembers = state.familyMembers.map { member ->
+                                if (member.id == "user_me") {
+                                    member.copy(
+                                        location = GeoPoint(loc.latitude, loc.longitude, "Ubicación GPS en vivo"),
+                                        currentSpeedKmH = (loc.speed * 3.6).toInt(),
+                                        heading = loc.bearing
+                                    )
+                                } else member
+                            }
+                            state.copy(
+                                familyMembers = updatedMembers,
+                                currentSpeedKmH = (loc.speed * 3.6).toInt().coerceAtLeast(state.currentSpeedKmH)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun startGpsTracking(context: Context) {
+        attachLocationService(context)
+        locationService?.startTracking()
+        showSnackbarAlert(
+            message = "Rastreo GPS en tiempo real activo",
+            iconEmoji = "🛰️"
+        )
+    }
+
+    fun stopGpsTracking() {
+        locationService?.stopTracking()
+    }
 
     init {
         startLiveMovementSimulation()
@@ -171,6 +240,31 @@ class FamRutaViewModel : ViewModel() {
                         }
                     } else null
 
+                    // If a new camera is detected that wasn't previously active, notify
+                    if (nearbyCamera != null && state.approachingCameraAlert == null) {
+                        showNotification(
+                            InAppNotification(
+                                title = "¡Atención: Fotomulta cercana!",
+                                message = "Cámara de velocidad a menos de 350m en ${nearbyCamera.location.streetName}. Límite: ${nearbyCamera.speedLimitKmH ?: 60} km/h",
+                                iconEmoji = "📷",
+                                type = NotificationType.ALERT,
+                                durationMs = 5000L
+                            )
+                        )
+                    }
+
+                    if (detectedReunion != null && state.reunionEvent == null) {
+                        showNotification(
+                            InAppNotification(
+                                title = "¡Encuentro Familiar! 🤗❤️",
+                                message = "${detectedReunion.member1Name} y ${detectedReunion.member2Name} se han reunido en ${detectedReunion.locationDescription}.",
+                                iconEmoji = "🎉",
+                                type = NotificationType.SUCCESS,
+                                durationMs = 6000L
+                            )
+                        )
+                    }
+
                     state.copy(
                         familyMembers = animatedMembers,
                         approachingCameraAlert = nearbyCamera,
@@ -228,6 +322,29 @@ class FamRutaViewModel : ViewModel() {
 
     fun closeReportModal() {
         _uiState.update { it.copy(showReportAlertModal = false) }
+    }
+
+    fun navigateTo(screen: AppScreen) {
+        _uiState.update { it.copy(currentScreen = screen) }
+    }
+
+    fun showNotification(notification: InAppNotification) {
+        _uiState.update { state ->
+            // Replace existing notification with same title or append
+            val filtered = state.activeNotifications.filterNot { it.title == notification.title }
+            state.copy(activeNotifications = filtered + notification)
+        }
+        // Auto dismiss after durationMs
+        viewModelScope.launch {
+            delay(notification.durationMs)
+            dismissNotification(notification.id)
+        }
+    }
+
+    fun dismissNotification(notificationId: String) {
+        _uiState.update { state ->
+            state.copy(activeNotifications = state.activeNotifications.filterNot { it.id == notificationId })
+        }
     }
 
     fun openRoutePlanner() {
@@ -366,6 +483,11 @@ class FamRutaViewModel : ViewModel() {
                 currentSpeedLimitKmH = 60
             )
         }
+        showSnackbarAlert(
+            message = "Ruta actualizada hacia ${member.name} (${route.durationMinutes} min)",
+            actionLabel = "Ver",
+            iconEmoji = "📍"
+        )
     }
 
     fun createRouteToDestination(destination: GeoPoint, name: String) {
@@ -381,6 +503,11 @@ class FamRutaViewModel : ViewModel() {
                 currentSpeedLimitKmH = 60
             )
         }
+        showSnackbarAlert(
+            message = "Ruta actualizada: $name (${route.durationMinutes} min • ${route.distanceKm} km)",
+            actionLabel = "Detalles",
+            iconEmoji = "🚗"
+        )
     }
 
     fun stopNavigation() {
@@ -530,6 +657,11 @@ class FamRutaViewModel : ViewModel() {
             isOnline = true
         )
         _uiState.update { it.copy(familyMembers = it.familyMembers + newMember) }
+        showSnackbarAlert(
+            message = "¡${newMember.name} se unió al círculo familiar!",
+            actionLabel = "Saludar",
+            iconEmoji = "👋"
+        )
     }
 
     private fun vibratePhone(context: Context, durationMs: Long) {

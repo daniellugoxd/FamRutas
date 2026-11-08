@@ -46,6 +46,39 @@
         "createdAt": { "type": "timestamp" }
       }
     },
+    "users": {
+      "path": "/users/{userId}",
+      "description": "User profiles with display name, avatar base64 or url, phone and updatedAt",
+      "fields": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "avatarBase64": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "updatedAt": { "type": "timestamp" }
+      }
+    },
+    "routes": {
+      "path": "/routes/{routeId}",
+      "description": "Real-time navigation routes with starting point, destination, live coordinates and shared status",
+      "fields": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "currentLatitude": { "type": "number" },
+        "currentLongitude": { "type": "number" },
+        "currentSpeedKmH": { "type": "number" },
+        "currentHeading": { "type": "number" },
+        "startLatitude": { "type": "number" },
+        "startLongitude": { "type": "number" },
+        "destinationLatitude": { "type": "number" },
+        "destinationLongitude": { "type": "number" },
+        "destinationName": { "type": "string" },
+        "isSharedWithFamily": { "type": "boolean" },
+        "sharedCircleId": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "updatedAt": { "type": "timestamp" }
+      }
+    },
     "messages": {
       "path": "/messages/{messageId}",
       "description": "Family chat and emergency messages",

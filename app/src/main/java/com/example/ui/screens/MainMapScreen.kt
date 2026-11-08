@@ -42,6 +42,27 @@ fun MainMapScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
+    // Request Location Permission and start GPS tracking
+    val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val coarseGranted = permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (fineGranted || coarseGranted) {
+            viewModel.startGpsTracking(context)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.attachLocationService(context)
+        locationPermissionLauncher.launch(
+            arrayOf(
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
+
     // Filtered data based on activeMapFilter
     val displayedAlerts = remember(uiState.trafficAlerts, uiState.activeMapFilter) {
         when (uiState.activeMapFilter) {
@@ -300,6 +321,14 @@ fun MainMapScreen(
                                 colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                             ) {
                                 Icon(Icons.Default.Group, contentDescription = "Familia", tint = MaterialTheme.colorScheme.primary)
+                            }
+
+                            // Settings Button (Versión, Creador, Ajustes)
+                            IconButton(
+                                onClick = { viewModel.navigateTo(com.example.viewmodel.AppScreen.SETTINGS) },
+                                colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                Icon(Icons.Default.Settings, contentDescription = "Configuración", tint = MaterialTheme.colorScheme.primary)
                             }
                         }
                     }
@@ -668,5 +697,12 @@ fun MainMapScreen(
                 }
             }
         }
+
+        // Smart In-App Notifications (Auto-disappearing alerts at the top)
+        NotificationHost(
+            notifications = uiState.activeNotifications,
+            onDismissNotification = { viewModel.dismissNotification(it) },
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }

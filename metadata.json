@@ -1,5 +1,5 @@
 {
-  "name": "Remix FamRuta",
+  "name": "FamRuta",
   "description": "Navegación familiar y GPS en tiempo real estilo Waze con tráfico, fotomultas, avatares, llamadas y rutas compartidas.",
   "requestFramePermissions": [],
   "majorCapabilities": [
