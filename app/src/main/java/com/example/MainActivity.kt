@@ -121,7 +121,7 @@ class MainActivity : ComponentActivity() {
                                         onContinueAsGuest = {
                                             viewModel.navigateTo(AppScreen.MAIN_MAP)
                                             viewModel.showSnackbarAlert(
-                                                message = "Modo Demo Activo. Datos simulados en vivo.",
+                                                message = "Modo local activo",
                                                 iconEmoji = "🚀"
                                             )
                                         }
