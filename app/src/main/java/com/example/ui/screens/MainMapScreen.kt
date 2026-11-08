@@ -262,12 +262,28 @@ fun MainMapScreen(
                             ) {
                                 Icon(Icons.Default.Navigation, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                             }
-                            Text(
-                                text = "FamRuta",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            Column {
+                                Text(
+                                    text = "FamRuta",
+                                    Text(
+    text = "${uiState.familyMembers.size} miembros protegidos",
+    fontSize = 11.sp,
+    color = VpnSecureGreen,
+    fontWeight = FontWeight.Bold
+)
+                                    
+                                    fontSize = 18.sp,
+                            fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface
+                           )
+
+                                Text(
+                                    text = "Protección familiar en tiempo real",
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                           )
+                           }
+
 
                             // VPN status badge
                             Surface(
@@ -300,6 +316,18 @@ fun MainMapScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
+                            Surface(
+    shape = RoundedCornerShape(10.dp),
+    color = Color(0xFF16A34A).copy(alpha = 0.15f)
+) {
+    Text(
+        text = "🟢 En línea",
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold
+    )
+                            }
+                            
                             // Traffic API Layer Toggle
                             IconButton(
                                 onClick = { viewModel.toggleTrafficOverlay() },
@@ -340,6 +368,19 @@ fun MainMapScreen(
                             }
 
                             // Settings Button (Versión, Creador, Ajustes)
+                            IconButton(
+    onClick = { viewModel.navigateTo(com.example.viewmodel.AppScreen.PROFILE) },
+    colors = IconButtonDefaults.filledIconButtonColors(
+        containerColor = MaterialTheme.colorScheme.primaryContainer
+    )
+) {
+    Icon(
+        Icons.Default.AccountCircle,
+        contentDescription = "Perfil"
+    )
+                            }
+                            
+                            
                             IconButton(
                                 onClick = { viewModel.navigateTo(com.example.viewmodel.AppScreen.SETTINGS) },
                                 colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
